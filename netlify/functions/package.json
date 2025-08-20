@@ -4,7 +4,7 @@
   "description": "Netlify functions for CCShop Panel",
   "main": "api.js",
   "dependencies": {
-    "@netlify/neon": "^1.0.0"
+    "@netlify/neon": "^0.1.0"
   },
   "engines": {
     "node": ">=18.0.0"
