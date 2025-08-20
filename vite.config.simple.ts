@@ -7,6 +7,11 @@ export default defineConfig({
   build: {
     outDir: 'build/client',
     target: 'esnext',
+    rollupOptions: {
+      input: {
+        main: './index.html'
+      }
+    }
   },
   resolve: {
     alias: {
@@ -16,4 +21,5 @@ export default defineConfig({
   server: {
     port: 3000,
   },
+  publicDir: 'public',
 });
