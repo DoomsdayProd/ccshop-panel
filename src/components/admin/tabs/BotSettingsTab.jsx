@@ -278,8 +278,8 @@ export function BotSettingsTab({
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-instrument font-medium text-white dark:text-gray-100">
-            Bot Settings
-          </h2>
+          Bot Settings
+        </h2>
           <p className="text-sm text-white/60 dark:text-gray-400 mt-1">
             Configure your Telegram bot behavior and marketplace settings
           </p>
@@ -300,17 +300,17 @@ export function BotSettingsTab({
             <span>{testingConnection ? "Testing..." : "Test Connection"}</span>
           </button>
           
-          {settingsChanged && (
-            <button
-              onClick={handleSaveSettings}
+        {settingsChanged && (
+          <button
+            onClick={handleSaveSettings}
               disabled={updateSettingsMutation.isPending || hasValidationErrors}
-              className="flex items-center space-x-2 bg-[#D6FF57] dark:bg-[#B8E845] text-[#001826] dark:text-[#0A0A0A] px-4 py-2 rounded-xl font-inter font-semibold transition-all duration-200 hover:bg-[#C4F94E] dark:hover:bg-[#A6D93A] disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Save size={16} />
-              <span>{updateSettingsMutation.isPending ? "Saving..." : "Save Changes"}</span>
-            </button>
-          )}
-        </div>
+            className="flex items-center space-x-2 bg-[#D6FF57] dark:bg-[#B8E845] text-[#001826] dark:text-[#0A0A0A] px-4 py-2 rounded-xl font-inter font-semibold transition-all duration-200 hover:bg-[#C4F94E] dark:hover:bg-[#A6D93A] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Save size={16} />
+            <span>{updateSettingsMutation.isPending ? "Saving..." : "Save Changes"}</span>
+          </button>
+        )}
+      </div>
       </div>
 
       {settingsLoading ? (
@@ -370,15 +370,15 @@ export function BotSettingsTab({
                   }`}>
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <label className="text-sm font-inter font-medium text-white/90 dark:text-gray-300">
-                          {setting.setting_key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-                        </label>
+                <label className="text-sm font-inter font-medium text-white/90 dark:text-gray-300">
+                  {setting.setting_key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                </label>
                         <div className="text-xs text-white/60 dark:text-gray-500 mt-1">
                           {setting.description}
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Bot className="w-4 h-4 text-white/50 dark:text-gray-500" />
+                <Bot className="w-4 h-4 text-white/50 dark:text-gray-500" />
                         {isKeyField && (
                           <span className="text-xs text-blue-300 dark:text-blue-400 px-2 py-1 bg-blue-500/20 dark:bg-blue-500/10 rounded border border-blue-500/30">
                             Key Field

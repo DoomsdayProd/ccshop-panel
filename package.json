@@ -20,6 +20,7 @@
 		"@emotion/styled": "11.11.0",
 		"@hono/auth-js": "^1.0.15",
 		"@lshay/ui": "^0.1.32",
+		"@netlify/neon": "^1.0.0",
 		"@neondatabase/serverless": "^0.10.4",
 		"@react-aria/button": "^3.13.1",
 		"@react-router/fs-routes": "^7.6.0",

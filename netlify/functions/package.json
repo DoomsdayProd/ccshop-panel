@@ -1,0 +1,12 @@
+{
+  "name": "ccshop-panel-netlify-functions",
+  "version": "1.0.0",
+  "description": "Netlify functions for CCShop Panel",
+  "main": "api.js",
+  "dependencies": {
+    "@netlify/neon": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
