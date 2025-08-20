@@ -4,8 +4,9 @@
 	"type": "module",
 	"scripts": {
 		"dev": "react-router dev",
-		"build": "react-router build",
-		"preview": "react-router preview",
+		"build": "vite build --config vite.config.simple.ts",
+		"build:router": "react-router build",
+		"preview": "vite preview",
 		"serve": "node serve.js",
 		"typecheck": "react-router typegen && tsc --noEmit",
 		"deploy": "node deploy.js"
@@ -83,6 +84,7 @@
 		"@types/react": "^18.3.1",
 		"@types/react-dom": "^18.3.1",
 		"@types/ws": "^8.18.1",
+		"@vitejs/plugin-react": "^5.0.1",
 		"autoprefixer": "^10.4.21",
 		"babel-plugin-react-require": "^4.0.3",
 		"fast-glob": "^3.3.3",

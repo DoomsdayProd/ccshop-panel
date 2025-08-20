@@ -19,6 +19,11 @@ export default defineConfig({
   build: {
     target: 'esnext',
     outDir: 'build/client',
+    rollupOptions: {
+      input: {
+        main: './index.html'
+      }
+    }
   },
   optimizeDeps: {
     // Explicitly include fast-glob, since it gets dynamically imported and we
