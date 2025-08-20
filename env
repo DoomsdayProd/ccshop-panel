@@ -1,5 +1,5 @@
 # Database Configuration
-NETLIFY_DATABASE_URL=postgresql://username:password@host:port/database
+NETLIFY_DATABASE_URL=postgresql://postgres:xupqbfnlkgsonilmnhwj@db.xupqbfnlkgsonilmnhwj.supabase.co:5432/postgres
 
 # Bot Configuration
 BOT_TOKEN=8338045292:AAH06vDlDVaeo8RfZUmT155Qn9unwA9knfU

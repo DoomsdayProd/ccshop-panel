@@ -25,6 +25,7 @@ import {
   Heart,
   Settings
 } from 'lucide-react';
+import UserAgreement from '../../components/UserAgreement';
 
 export default function Marketplace() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -38,6 +39,9 @@ export default function Marketplace() {
   const [showProfile, setShowProfile] = useState(false);
   const [activeTab, setActiveTab] = useState('shop'); // shop, orders, profile
   const [telegramUser, setTelegramUser] = useState(null);
+  const [showUserAgreement, setShowUserAgreement] = useState(false);
+  const [userCredentials, setUserCredentials] = useState(null);
+  const [hasAgreedToTerms, setHasAgreedToTerms] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -73,6 +77,48 @@ export default function Marketplace() {
       });
     }
   }, [telegramUser]);
+
+  // Check if user has agreed to terms
+  useEffect(() => {
+    if (telegramUser) {
+      checkUserAgreement();
+    }
+  }, [telegramUser]);
+
+  const checkUserAgreement = async () => {
+    try {
+      const response = await fetch(`/api/user-agreement/check/${telegramUser.id}`);
+      if (response.ok) {
+        const result = await response.json();
+        setHasAgreedToTerms(result.hasAgreed);
+        if (result.hasAgreed) {
+          setUserCredentials(result.credentials);
+        } else {
+          setShowUserAgreement(true);
+        }
+      } else {
+        // If endpoint doesn't exist or fails, show agreement for new users
+        setShowUserAgreement(true);
+      }
+    } catch (error) {
+      console.error('Error checking user agreement:', error);
+      setShowUserAgreement(true);
+    }
+  };
+
+  const handleAgreementComplete = (credentials) => {
+    setUserCredentials(credentials);
+    setHasAgreedToTerms(true);
+    setShowUserAgreement(false);
+    
+    // Store credentials in localStorage for future use
+    localStorage.setItem('userCredentials', JSON.stringify(credentials));
+    
+    // Show success message
+    if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.showAlert('Welcome! Your account has been created successfully.');
+    }
+  };
 
   // Fetch data entries
   const { data: entriesData, isLoading } = useQuery({
@@ -473,6 +519,16 @@ export default function Marketplace() {
       </div>
     </div>
   );
+
+  // Show user agreement if user hasn't agreed to terms
+  if (showUserAgreement) {
+    return (
+      <UserAgreement 
+        onAgreementComplete={handleAgreementComplete}
+        userData={telegramUser}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#05151B] to-[#E9ECEF] dark:from-[#0A0A0A] dark:to-[#1E1E1E]">

@@ -4,14 +4,14 @@
 export const config = {
   // Database Configuration
   database: {
-    url: process.env.DATABASE_URL || 'postgresql://username:password@localhost:5432/database_name'
+    url: process.env.DATABASE_URL || 'postgresql://postgres:xupqbfnlkgsonilmnhwj@db.xupqbfnlkgsonilmnhwj.supabase.co:5432/postgres'
   },
   
   // Bot Configuration
   bot: {
-    token: process.env.BOT_TOKEN || 'your_telegram_bot_token',
+    token: process.env.BOT_TOKEN || '8338045292:AAH06vDlDVaeo8RfZUmT155Qn9unwA9knfU',
     webhookUrl: process.env.WEBHOOK_URL || 'https://yourdomain.com/api/webhook',
-    adminChatId: process.env.ADMIN_CHAT_ID || 'your_admin_chat_id'
+    adminChatId: process.env.ADMIN_CHAT_ID || '7890791560'
   },
   
   // Server Configuration
@@ -22,7 +22,7 @@ export const config = {
   
   // App Configuration
   app: {
-    projectGroupId: process.env.NEXT_PUBLIC_PROJECT_GROUP_ID || 'your_project_group_id',
+    projectGroupId: process.env.NEXT_PUBLIC_PROJECT_GROUP_ID || 'xupqbfnlkgsonilmnhwj',
     baseUrl: process.env.NEXT_PUBLIC_CREATE_BASE_URL || 'https://www.create.xyz'
   }
 };

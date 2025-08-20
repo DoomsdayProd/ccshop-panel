@@ -14,6 +14,9 @@ export function BotSettingsTab({
   const [validationErrors, setValidationErrors] = useState({});
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionResults, setConnectionResults] = useState(null);
+  const [setupResult, setSetupResult] = useState(null);
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const validateSetting = (key, value, type) => {
     const errors = {};
@@ -110,8 +113,68 @@ export function BotSettingsTab({
               </div>
             </div>
           );
-        } else if (setting.setting_key.includes("message") || setting.setting_key === "webhook_url") {
-          return <textarea rows={4} {...commonProps} />;
+        } else if (setting.setting_key === "database_url") {
+          return (
+            <div>
+              <input type="text" {...commonProps} placeholder="postgresql://user:password@host:port/database" />
+              <div className="text-xs text-white/50 dark:text-gray-500 mt-1">
+                Neon PostgreSQL connection string. Format: postgresql://user:password@host:port/database
+              </div>
+            </div>
+          );
+        } else if (setting.setting_key === "webhook_url") {
+          return (
+            <div>
+              <input type="url" {...commonProps} placeholder="https://your-app.netlify.app/api/bot/webhook" />
+              <div className="text-xs text-white/50 dark:text-gray-500 mt-1">
+                Your app's webhook URL for Telegram bot updates. Must be HTTPS for production.
+              </div>
+            </div>
+          );
+        } else if (setting.setting_key === "app_url") {
+          return (
+            <div>
+              <input type="url" {...commonProps} placeholder="https://your-app.netlify.app" />
+              <div className="text-xs text-white/50 dark:text-gray-500 mt-1">
+                Your app's public URL (for Mini App links and webhook configuration).
+              </div>
+            </div>
+          );
+        } else if (setting.setting_key === "welcome_message") {
+          return (
+            <div>
+              <textarea 
+                {...commonProps} 
+                rows={4}
+                placeholder="🎉 Welcome to Data Shop! I'm your personal shopping assistant..."
+              />
+              <div className="text-xs text-white/50 dark:text-gray-500 mt-1">
+                Custom welcome message for new users. Use {first_name} for user's first name.
+              </div>
+            </div>
+          );
+        } else if (setting.setting_key === "notification_settings") {
+          return (
+            <div>
+              <textarea 
+                {...commonProps} 
+                rows={3}
+                placeholder='{"purchase_notifications": true, "order_updates": true, "admin_alerts": true}'
+              />
+              <div className="text-xs text-white/50 dark:text-gray-500 mt-1">
+                JSON format notification preferences. Configure which notifications to send.
+              </div>
+            </div>
+          );
+        } else if (setting.setting_key.includes("message")) {
+          return (
+            <div>
+              <textarea rows={4} {...commonProps} placeholder="Enter your custom message here..." />
+              <div className="text-xs text-white/50 dark:text-gray-500 mt-1">
+                Custom message template. Use variables like {user_name}, {order_id}, etc.
+              </div>
+            </div>
+          );
         } else if (setting.setting_key.includes("quiet_hours")) {
           return (
             <div>
@@ -127,15 +190,6 @@ export function BotSettingsTab({
               <input type="text" {...commonProps} placeholder="Chat ID or username" />
               <div className="text-xs text-white/50 dark:text-gray-500 mt-1">
                 Use @userinfobot to get chat ID
-              </div>
-            </div>
-          );
-        } else if (setting.setting_key === "webhook_url") {
-          return (
-            <div>
-              <input type="url" {...commonProps} placeholder="https://yourdomain.com/api/webhook" />
-              <div className="text-xs text-white/50 dark:text-gray-500 mt-1">
-                Must be HTTPS for production
               </div>
             </div>
           );
@@ -249,18 +303,153 @@ export function BotSettingsTab({
           status: 'error', 
           results: { 
             general: { status: 'error', message: 'Failed to test connection' } 
-          } 
-        });
+        }
+      });
+    }
+  } catch (error) {
+    setConnectionResults({ 
+      status: 'error', 
+      results: { 
+        general: { status: 'error', message: error.message } 
+      } 
+    });
+  } finally {
+    setTestingConnection(false);
+  }
+};
+
+  const setupBot = async (action) => {
+    setIsLoading(true);
+    setSetupResult(null);
+    
+    try {
+      const response = await fetch('/api/bot/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        setSetupResult(result);
+      } else {
+        const error = await response.json();
+        setSetupResult({ success: false, error: error.error || 'Setup failed' });
       }
     } catch (error) {
-      setConnectionResults({ 
-        status: 'error', 
-        results: { 
-          general: { status: 'error', message: error.message } 
-        } 
-      });
+      setSetupResult({ success: false, error: error.message || 'Setup failed' });
     } finally {
-      setTestingConnection(false);
+      setIsLoading(false);
+    }
+  };
+
+  const handleQuickConfig = async (action) => {
+    setIsLoading(true);
+    
+    try {
+      switch (action) {
+        case 'database':
+          // Test database connection
+          const dbResponse = await fetch('/api/bot-settings/test-connection');
+          if (dbResponse.ok) {
+            alert('✅ Database connection successful!');
+          } else {
+            alert('❌ Database connection failed. Check your DATABASE_URL.');
+          }
+          break;
+          
+        case 'webhook':
+          // Test webhook configuration
+          if (editingSettings.webhook_url) {
+            alert(`🔗 Webhook URL configured: ${editingSettings.webhook_url}`);
+          } else {
+            alert('⚠️ Webhook URL not configured. Set it in the settings above.');
+          }
+          break;
+          
+        case 'bot':
+          // Test bot token
+          if (editingSettings.bot_token) {
+            const botResponse = await fetch(`https://api.telegram.org/bot${editingSettings.bot_token}/getMe`);
+            if (botResponse.ok) {
+              const botInfo = await botResponse.json();
+              alert(`✅ Bot API working! Bot: @${botInfo.result.username}`);
+            } else {
+              alert('❌ Bot token invalid. Check your bot token.');
+            }
+          } else {
+            alert('⚠️ Bot token not configured. Set it in the settings above.');
+          }
+          break;
+          
+        case 'validate':
+          // Validate all required settings
+          const requiredFields = ['bot_token', 'admin_chat_id', 'database_url'];
+          const missingFields = requiredFields.filter(field => !editingSettings[field]);
+          
+          if (missingFields.length === 0) {
+            alert('✅ All required settings are configured!');
+          } else {
+            alert(`⚠️ Missing required fields: ${missingFields.join(', ')}`);
+          }
+          break;
+          
+        case 'export':
+          // Export current configuration
+          const config = {
+            bot_token: editingSettings.bot_token,
+            admin_chat_id: editingSettings.admin_chat_id,
+            database_url: editingSettings.database_url,
+            webhook_url: editingSettings.webhook_url,
+            app_url: editingSettings.app_url,
+            export_date: new Date().toISOString()
+          };
+          
+          const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'bot-config.json';
+          a.click();
+          URL.revokeObjectURL(url);
+          alert('📤 Configuration exported successfully!');
+          break;
+          
+        case 'import':
+          // Import configuration
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = '.json';
+          input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+              try {
+                const text = await file.text();
+                const config = JSON.parse(text);
+                
+                // Update settings with imported values
+                Object.keys(config).forEach(key => {
+                  if (key !== 'export_date') {
+                    handleSettingChange(key, config[key]);
+                  }
+                });
+                
+                alert('📥 Configuration imported successfully!');
+              } catch (error) {
+                alert('❌ Failed to import configuration. Invalid JSON file.');
+              }
+            }
+          };
+          input.click();
+          break;
+          
+        default:
+          alert('Unknown action');
+      }
+    } catch (error) {
+      alert(`❌ Error: ${error.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -353,6 +542,129 @@ export function BotSettingsTab({
             </div>
           </div>
 
+          {/* Essential Configuration Fields */}
+          <div className="bg-white/5 dark:bg-white/5 rounded-xl border border-white/10 dark:border-white/5 p-6 mb-8">
+            <h3 className="text-lg font-instrument font-medium text-white/90 dark:text-gray-200 mb-4">
+              🔑 Essential Configuration
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Bot Token */}
+              <div>
+                <label className="block text-sm font-inter font-medium text-white/90 dark:text-gray-300 mb-2">
+                  Bot Token *
+                </label>
+                <input
+                  type="text"
+                  value={editingSettings.bot_token || ''}
+                  onChange={(e) => handleSettingChange('bot_token', e.target.value)}
+                  placeholder="8338045292:AAH06vDlDVaeo8RfZUmT155Qn9unwA9knfU"
+                  className="w-full px-4 py-3 bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 rounded-xl text-white dark:text-gray-100 placeholder-white/50 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#D6FF57] dark:focus:ring-[#B8E845] focus:border-transparent"
+                />
+                <div className="text-xs text-white/50 dark:text-gray-500 mt-1">
+                  Get from @BotFather. Format: [bot_id]:[bot_hash]
+                </div>
+              </div>
+
+              {/* Admin Chat ID */}
+              <div>
+                <label className="block text-sm font-inter font-medium text-white/90 dark:text-gray-300 mb-2">
+                  Admin Chat ID *
+                </label>
+                <input
+                  type="text"
+                  value={editingSettings.admin_chat_id || ''}
+                  onChange={(e) => handleSettingChange('admin_chat_id', e.target.value)}
+                  placeholder="7890791560"
+                  className="w-full px-4 py-3 bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 rounded-xl text-white dark:text-gray-100 placeholder-white/50 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#D6FF57] dark:focus:ring-[#B8E845] focus:border-transparent"
+                />
+                <div className="text-xs text-white/50 dark:text-gray-500 mt-1">
+                  Your Telegram chat ID. Use @userinfobot to get it
+                </div>
+              </div>
+
+              {/* Database URL */}
+              <div>
+                <label className="block text-sm font-inter font-medium text-white/90 dark:text-gray-300 mb-2">
+                  Database URL *
+                </label>
+                <input
+                  type="text"
+                  value={editingSettings.database_url || ''}
+                  onChange={(e) => handleSettingChange('database_url', e.target.value)}
+                  placeholder="postgresql://user:password@host:port/database"
+                  className="w-full px-4 py-3 bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 rounded-xl text-white dark:text-gray-100 placeholder-white/50 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#D6FF57] dark:focus:ring-[#B8E845] focus:border-transparent"
+                />
+                <div className="text-xs text-white/50 dark:text-gray-500 mt-1">
+                  Neon PostgreSQL connection string
+                </div>
+              </div>
+
+              {/* Webhook URL */}
+              <div>
+                <label className="block text-sm font-inter font-medium text-white/90 dark:text-gray-300 mb-2">
+                  Webhook URL
+                </label>
+                <input
+                  type="url"
+                  value={editingSettings.webhook_url || ''}
+                  onChange={(e) => handleSettingChange('webhook_url', e.target.value)}
+                  placeholder="https://your-app.netlify.app/api/bot/webhook"
+                  className="w-full px-4 py-3 bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 rounded-xl text-white dark:text-gray-100 placeholder-white/50 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#D6FF57] dark:focus:ring-[#B8E845] focus:border-transparent"
+                />
+                <div className="text-xs text-white/50 dark:text-gray-500 mt-1">
+                  Your app's webhook endpoint for bot updates
+                </div>
+              </div>
+
+              {/* App URL */}
+              <div>
+                <label className="block text-sm font-inter font-medium text-white/90 dark:text-gray-300 mb-2">
+                  App URL
+                </label>
+                <input
+                  type="url"
+                  value={editingSettings.app_url || ''}
+                  onChange={(e) => handleSettingChange('app_url', e.target.value)}
+                  placeholder="https://your-app.netlify.app"
+                  className="w-full px-4 py-3 bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 rounded-xl text-white dark:text-gray-100 placeholder-white/50 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#D6FF57] dark:focus:ring-[#B8E845] focus:border-transparent"
+                />
+                <div className="text-xs text-white/50 dark:text-gray-500 mt-1">
+                  Your app's public URL for Mini App links
+                </div>
+              </div>
+
+              {/* Connected Channels */}
+              <div>
+                <label className="block text-sm font-inter font-medium text-white/90 dark:text-gray-300 mb-2">
+                  Connected Channels
+                </label>
+                <textarea
+                  value={editingSettings.connected_channels || ''}
+                  onChange={(e) => handleSettingChange('connected_channels', e.target.value)}
+                  placeholder="@channel1, @channel2, @channel3"
+                  rows={3}
+                  className="w-full px-4 py-3 bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 rounded-xl text-white dark:text-gray-100 placeholder-white/50 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#D6FF57] dark:focus:ring-[#B8E845] focus:border-transparent"
+                />
+                <div className="text-xs text-white/50 dark:text-gray-500 mt-1">
+                  Comma-separated channel usernames or IDs
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-between">
+              <div className="text-sm text-white/70 dark:text-gray-400">
+                <span className="text-red-400">*</span> Required fields
+              </div>
+              <button
+                onClick={() => handleQuickConfig('validate')}
+                className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl font-inter font-medium transition-all duration-200"
+              >
+                ✅ Validate All Settings
+              </button>
+            </div>
+          </div>
+
           <div className="space-y-8">
             {Object.entries(groupedSettings).map(([category, settings]) => (
             <div key={category} className="space-y-4">
@@ -415,6 +727,134 @@ export function BotSettingsTab({
         </div>
         </>
       )}
+
+      {/* Quick Configuration Actions */}
+      <div className="mt-8 bg-white/5 dark:bg-white/5 rounded-xl border border-white/10 dark:border-white/5 p-6">
+        <h3 className="text-lg font-instrument font-medium text-white/90 dark:text-gray-200 mb-4">
+          ⚙️ Quick Configuration Actions
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+          <button
+            onClick={() => handleQuickConfig('database')}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl font-inter font-medium transition-all duration-200"
+          >
+            🗄️ Test Database
+          </button>
+          
+          <button
+            onClick={() => handleQuickConfig('webhook')}
+            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-inter font-medium transition-all duration-200"
+          >
+            🔗 Test Webhook
+          </button>
+          
+          <button
+            onClick={() => handleQuickConfig('bot')}
+            className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-xl font-inter font-medium transition-all duration-200"
+          >
+            🤖 Test Bot API
+          </button>
+          
+          <button
+            onClick={() => handleQuickConfig('validate')}
+            className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl font-inter font-medium transition-all duration-200"
+          >
+            ✅ Validate Settings
+          </button>
+          
+          <button
+            onClick={() => handleQuickConfig('export')}
+            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-xl font-inter font-medium transition-all duration-200"
+          >
+            📤 Export Config
+          </button>
+          
+          <button
+            onClick={() => handleQuickConfig('import')}
+            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-xl font-inter font-medium transition-all duration-200"
+          >
+            📥 Import Config
+          </button>
+        </div>
+
+        <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+          <p className="text-xs text-yellow-300 dark:text-yellow-400">
+            <strong>Quick Actions:</strong> Use these buttons to quickly test and validate your configuration. 
+            Test Database checks your Neon connection, Test Webhook verifies bot webhook setup, 
+            Test Bot API validates your bot token, and Validate Settings checks all required fields.
+          </p>
+        </div>
+      </div>
+
+      {/* Bot Setup & Management */}
+      <div className="mt-8 bg-white/5 dark:bg-white/5 rounded-xl border border-white/10 dark:border-white/5 p-6">
+        <h3 className="text-lg font-instrument font-medium text-white/90 dark:text-gray-200 mb-4">
+          🤖 Bot Setup & Management
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <button
+            onClick={() => setupBot('set_webhook')}
+            disabled={isLoading}
+            className="bg-[#D6FF57] dark:bg-[#B8E845] text-[#001826] dark:text-[#0A0A0A] px-4 py-2 rounded-xl font-inter font-medium transition-all duration-200 hover:bg-[#C4F94E] dark:hover:bg-[#A6D93A] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            🔗 Set Webhook
+          </button>
+          
+          <button
+            onClick={() => setupBot('set_commands')}
+            disabled={isLoading}
+            className="bg-[#D6FF57] dark:bg-[#B8E845] text-[#001826] dark:text-[#0A0A0A] px-4 py-2 rounded-xl font-inter font-medium transition-all duration-200 hover:bg-[#C4F94E] dark:hover:bg-[#A6D93A] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            📝 Set Commands
+          </button>
+          
+          <button
+            onClick={() => setupBot('get_webhook_info')}
+            disabled={isLoading}
+            className="bg-white/10 dark:bg-white/5 text-white dark:text-gray-100 px-4 py-2 rounded-xl font-inter font-medium transition-all duration-200 hover:bg-white/20 dark:hover:bg-white/10 border border-white/20 dark:border-white/10"
+          >
+            📊 Webhook Info
+          </button>
+          
+          <button
+            onClick={() => setupBot('test_bot')}
+            disabled={isLoading}
+            className="bg-white/10 dark:bg-white/5 text-white dark:text-gray-100 px-4 py-2 rounded-xl font-inter font-medium transition-all duration-200 hover:bg-white/20 dark:hover:bg-white/10 border border-white/20 dark:border-white/10"
+          >
+            🧪 Test Bot
+          </button>
+        </div>
+
+        {setupResult && (
+          <div className={`p-4 rounded-xl border ${
+            setupResult.success 
+              ? 'bg-green-500/20 border-green-500/30 text-green-300' 
+              : 'bg-red-500/20 border-red-500/30 text-red-300'
+          }`}>
+            <div className="font-medium mb-2">
+              {setupResult.success ? '✅ Success' : '❌ Error'}
+            </div>
+            <div className="text-sm">
+              {setupResult.message || setupResult.error}
+            </div>
+            {setupResult.webhookUrl && (
+              <div className="text-xs mt-2 opacity-80">
+                Webhook URL: {setupResult.webhookUrl}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+          <p className="text-xs text-blue-300 dark:text-blue-400">
+            <strong>Setup Steps:</strong> 1) Click "Set Webhook" to connect your bot to this server. 
+            2) Click "Set Commands" to configure bot commands. 3) Use "Test Bot" to verify everything works. 
+            4) Start chatting with your bot using /start command!
+          </p>
+        </div>
+      </div>
 
       {/* Connection Test Results */}
       {connectionResults && (

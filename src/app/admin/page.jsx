@@ -4,6 +4,7 @@ import { useAdminPanel } from "../../hooks/useAdminPanel";
 import { AdminHeader } from "../../components/admin/AdminHeader";
 import { StatsOverview } from "../../components/admin/StatsOverview";
 import { TabNavigation } from "../../components/admin/TabNavigation";
+import { RealTimeStats } from "../../components/admin/RealTimeStats";
 import { UploadTab } from "../../components/admin/tabs/UploadTab";
 import { ManageListingsTab } from "../../components/admin/tabs/ManageListingsTab";
 import { OrdersTab } from "../../components/admin/tabs/OrdersTab";
@@ -117,6 +118,12 @@ export default function AdminPanel() {
       <AdminHeader />
       <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-12 py-8">
         <StatsOverview stats={stats} />
+        
+        {/* Real-Time Dashboard */}
+        <div className="mt-8">
+          <RealTimeStats />
+        </div>
+        
         <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
         <div className="bg-white/10 dark:bg-white/5 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-white/10">
           {renderTabContent()}
